@@ -1,0 +1,41 @@
+# NSS Database
+
+Documentação e contrato do banco de dados da plataforma NSS (Sala de Situação de Saúde).
+
+Este repositório centraliza a explicação dos bancos, schemas, tabelas, permissões, consultas analíticas, índices, migrations e medições de desempenho. As migrations continuam sendo executadas e mantidas no repositório responsável por cada ciclo de vida até que o banco seja desacoplado operacionalmente.
+
+## Repositórios relacionados
+
+- [NSS Deployment](https://github.com/Zadoque/NSS-deployment): composição dos serviços, banco, roles e execução.
+- [NSS Pipeline](https://github.com/Zadoque/NSS-pipeline): Bronze, Silver, Gold, carga analítica e migrations do schema `analytics`.
+- [NSS Java](https://github.com/Zadoque/Site-Sala-de-Situa-o-de-Saude-Java): API, autenticação e consultas do banco.
+- [NSS Front-end](https://github.com/Zadoque/NSS-front-end): aplicação web consumidora da API.
+
+## Visão geral
+
+```mermaid
+flowchart LR
+    P[NSS Pipeline] -->|carga Gold e publicação| DB[(PostgreSQL NSS)]
+    J[NSS Java] -->|consultas analíticas| DB
+    G[Grafana] -->|dashboards e métricas| DB
+    D[NSS Deployment] -->|Compose, roles e migrations| DB
+
+    DB --> A[analytics.fato_casos]
+    DB --> C[analytics.pipeline_current_publication]
+    DB --> M[analytics.dim_municipio]
+    DB --> U[users e sessões]
+```
+
+## Documentação
+
+- [Arquitetura e responsabilidades](docs/architecture.md)
+- [Catálogo de consultas e desempenho](docs/query-catalog.md)
+- [Diagrama do modelo analítico](diagrams/analytics-erd.md)
+
+## Princípios
+
+1. `analytics.fato_casos` é o read model analítico consumido pela API.
+2. `analytics.pipeline_current_publication` define o lote corrente por doença, ano e município.
+3. Consultas da API devem respeitar a publicação corrente e nunca misturar lotes antigos.
+4. Toda mudança de schema deve ter migration, teste e medição de impacto.
+5. Resultados de `EXPLAIN (ANALYZE, BUFFERS)` devem ser registrados quando uma consulta crítica for alterada.
