@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plano de centralização do banco de dados — NSS</title>
+  <style>
+    :root { --bg:#08111f; --panel:#101d31; --panel2:#142640; --text:#edf5ff; --muted:#a8bad3; --cyan:#54d6ff; --green:#6ee7a5; --amber:#ffd166; --red:#ff7b8b; --line:#29415f; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--text); background:radial-gradient(circle at 80% 0%,#17345a 0,#08111f 42rem); font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif; }
+    a { color:var(--cyan); }
+    .wrap { width:min(1120px,calc(100% - 36px)); margin:auto; }
+    header { min-height:78vh; display:grid; align-content:center; padding:72px 0; }
+    .eyebrow { color:var(--green); letter-spacing:.14em; text-transform:uppercase; font-weight:700; font-size:.78rem; }
+    h1 { font-size:clamp(2.5rem,7vw,5.8rem); line-height:.98; max-width:900px; margin:18px 0 24px; letter-spacing:-.06em; }
+    h2 { font-size:clamp(1.7rem,3vw,2.7rem); line-height:1.1; margin:0 0 20px; }
+    h3 { color:var(--cyan); margin-top:0; }
+    p, li { color:var(--muted); }
+    .lead { font-size:1.22rem; max-width:800px; }
+    .chips { display:flex; flex-wrap:wrap; gap:10px; margin-top:30px; }
+    .chip { border:1px solid var(--line); background:#10223a; padding:7px 12px; border-radius:99px; color:var(--text); }
+    section { padding:76px 0; border-top:1px solid rgba(84,214,255,.14); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px; }
+    .card { background:linear-gradient(145deg,var(--panel),rgba(16,29,49,.55)); border:1px solid var(--line); border-radius:18px; padding:22px; box-shadow:0 14px 40px #0003; }
+    .card:hover { transform:translateY(-5px); border-color:var(--cyan); transition:.25s ease; }
+    .number { display:inline-grid; place-items:center; width:35px; height:35px; border-radius:50%; color:#06111d; background:var(--green); font-weight:800; margin-bottom:14px; }
+    .timeline { position:relative; display:grid; gap:16px; margin-top:28px; }
+    .timeline:before { content:""; position:absolute; left:17px; top:18px; bottom:18px; width:2px; background:linear-gradient(var(--cyan),var(--green)); }
+    .step { position:relative; display:grid; grid-template-columns:36px 1fr; gap:16px; }
+    .step .dot { width:36px; height:36px; border:2px solid var(--cyan); border-radius:50%; background:var(--bg); z-index:1; }
+    .step .body { padding:16px 20px; background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+    table { width:100%; border-collapse:collapse; background:var(--panel); border-radius:14px; overflow:hidden; }
+    th,td { padding:13px 15px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { color:var(--cyan); background:#152945; }
+    code { color:#c8f3ff; background:#071321; padding:2px 5px; border-radius:5px; }
+    pre { overflow:auto; padding:20px; border:1px solid var(--line); border-radius:14px; background:#050c16; color:#d7f7ff; }
+    .architecture { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; align-items:center; margin:30px 0; }
+    .node { padding:16px 10px; text-align:center; border:1px solid var(--cyan); border-radius:12px; background:#10253e; animation:pulse 3s ease-in-out infinite; }
+    .arrow { color:var(--green); text-align:center; font-size:1.5rem; }
+    .ok { border-left:4px solid var(--green); } .warn { border-left:4px solid var(--amber); } .danger { border-left:4px solid var(--red); }
+    details { border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin:10px 0; background:var(--panel); }
+    summary { cursor:pointer; color:var(--text); font-weight:700; }
+    .bar { height:10px; border-radius:8px; background:#203957; overflow:hidden; margin:10px 0 18px; }
+    .bar i { display:block; width:0; height:100%; background:linear-gradient(90deg,var(--cyan),var(--green)); animation:grow 1.8s .2s forwards; }
+    footer { padding:50px 0 80px; color:var(--muted); }
+    @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 #54d6ff22; } 50% { box-shadow:0 0 0 9px #54d6ff00; } }
+    @keyframes grow { to { width:100%; } }
+    @media (max-width:700px) { .architecture { grid-template-columns:1fr; } .arrow { transform:rotate(90deg); } }
+    @media (prefers-reduced-motion:reduce) { *,*:before,*:after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div class="eyebrow">NSS · plano técnico · decisão arquitetural</div>
+      <h1>Centralizar o banco sem centralizar o dado bruto.</h1>
+      <p class="lead">Este documento descreve como transformar o <code>NSS-database</code> na fonte oficial do schema, migrations, permissões e contratos do PostgreSQL, preservando a autonomia do Java, da pipeline e do Deployment.</p>
+      <div class="chips"><span class="chip">Status: planejamento</span><span class="chip">Ambiente: pré-produção</span><span class="chip">Objetivo: uma fonte de verdade</span></div>
+    </header>
+
+    <section id="decisao">
+      <h2>A decisão recomendada</h2>
+      <div class="card ok"><h3>Centralizar o ciclo de vida do schema</h3><p>É correto porque Java e Pipeline compartilham o mesmo PostgreSQL e o schema analítico é um contrato entre componentes. A aplicação deve consumir um banco previamente preparado; não deve decidir sozinha, durante o boot, qual estado estrutural o banco precisa ter.</p><p><strong>O que será centralizado:</strong> migrations, seeds determinísticos, permissões esperadas, índices, contratos, diagramas, testes e consultas de referência.</p><p><strong>O que continuará fora do Git:</strong> volumes PostgreSQL, dados reais, Parquets completos, tokens e credenciais.</p></div>
+    </section>
+
+    <section id="atual">
+      <h2>Estado atual e problema</h2>
+      <div class="architecture">
+        <div class="node">Java<br><small>Flyway · public</small></div><div class="arrow">→</div>
+        <div class="node">NSS PostgreSQL</div><div class="arrow">←</div>
+        <div class="node">Pipeline<br><small>Alembic · analytics</small></div>
+      </div>
+      <div class="grid">
+        <div class="card warn"><h3>Migrations distribuídas</h3><p>O Java mantém o schema operacional e a Pipeline mantém o schema analítico. O Deployment orquestra ambos, mas a definição do banco está espalhada.</p></div>
+        <div class="card warn"><h3>Risco de ordem</h3><p>Uma alteração em <code>analytics</code> pode ser publicada sem que o Java tenha validado a consulta correspondente, ou vice-versa.</p></div>
+        <div class="card warn"><h3>Diagnóstico difícil</h3><p>Fica menos evidente qual repositório representa o estado oficial do banco e qual versão foi aplicada.</p></div>
+      </div>
+    </section>
+
+    <section id="alvo">
+      <h2>Arquitetura alvo</h2>
+      <pre><code>NSS-database
+├── migrations/
+│   ├── 0001_initial_schema.sql
+│   ├── 0002_auth_schema.sql
+│   ├── 0003_analytics_schema.sql
+│   └── ...
+├── seeds/
+├── contracts/
+├── tests/
+└── docs/
+
+Deployment ── aplica migrations ──► PostgreSQL
+                                      ├── public       ◄── Java
+                                      └── analytics    ◄── Pipeline</code></pre>
+      <p>O Deployment passa a executar o banco antes de subir Java, Pipeline sob demanda, Frontend e observabilidade. Java e Pipeline recebem usuários com privilégios limitados e não fazem DDL em runtime.</p>
+    </section>
+
+    <section id="fases">
+      <h2>Plano de execução</h2>
+      <div class="timeline">
+        <div class="step"><div class="dot"></div><div class="body"><span class="number">1</span><h3>Inventário e congelamento</h3><p>Catalogar Flyway, Alembic, DDL, índices, seeds e permissões atuais. Congelar mudanças estruturais durante a migração para evitar duas fontes divergentes.</p><p><strong>Saída:</strong> matriz de objetos e versão de referência.</p></div></div>
+        <div class="step"><div class="dot"></div><div class="body"><span class="number">2</span><h3>Definição do estado inicial</h3><p>Consolidar o estado atual em uma migration inicial única, equivalente ao banco aprovado. Validar tabelas, constraints, índices, roles e grants em PostgreSQL limpo.</p><p><strong>Saída:</strong> <code>0001_initial_schema</code> reproduzível.</p></div></div>
+        <div class="step"><div class="dot"></div><div class="body"><span class="number">3</span><h3>Portabilidade dos consumidores</h3><p>Remover a execução automática duplicada do Flyway no Java e do Alembic na Pipeline. Os dois componentes passam a falhar com mensagem clara quando o schema esperado não existe.</p><p><strong>Saída:</strong> nenhum serviço aplica DDL por conta própria.</p></div></div>
+        <div class="step"><div class="dot"></div><div class="body"><span class="number">4</span><h3>Orquestração no Deployment</h3><p>Criar um serviço/job de migration com imagem e versão fixas. A ordem será: banco → permissões → migration central → Java/Pipeline → frontend/Caddy.</p><p><strong>Saída:</strong> runbook idempotente e observável.</p></div></div>
+        <div class="step"><div class="dot"></div><div class="body"><span class="number">5</span><h3>CI e testes de contrato</h3><p>Subir PostgreSQL limpo no CI, aplicar todas as migrations, executar testes de schema e validar as queries Java e o loader da Pipeline contra o mesmo contrato.</p><p><strong>Saída:</strong> PR bloqueado quando migration, query ou permissão quebrar.</p></div></div>
+        <div class="step"><div class="dot"></div><div class="body"><span class="number">6</span><h3>Cutover e validação</h3><p>Aplicar em ambiente vazio, carregar uma doença de referência, comparar contagens Bronze/Silver/Gold/PostgreSQL, validar login, mapa, dashboards e consultas de município/UF/região.</p><p><strong>Saída:</strong> checklist de aceite assinado e banco reproduzível.</p></div></div>
+      </div>
+    </section>
+
+    <section id="responsabilidades">
+      <h2>Responsabilidades após a mudança</h2>
+      <table><thead><tr><th>Componente</th><th>Faz</th><th>Não faz</th></tr></thead><tbody>
+        <tr><td><code>NSS-database</code></td><td>Define schema, migrations, grants, contratos e testes.</td><td>Não armazena produção nem executa a Gold.</td></tr>
+        <tr><td>Deployment</td><td>Executa a migration central na ordem correta e expõe diagnóstico.</td><td>Não mantém cópia manual do DDL.</td></tr>
+        <tr><td>Java</td><td>Autentica e consulta usando o schema aprovado.</td><td>Não cria/altera tabelas no boot.</td></tr>
+        <tr><td>Pipeline</td><td>Transforma e carrega fatos usando o contrato analytics.</td><td>Não executa migrations durante a ingestão.</td></tr>
+      </tbody></table>
+    </section>
+
+    <section id="dados">
+      <h2>O que será versionado</h2>
+      <div class="grid">
+        <div class="card"><h3>Estrutura</h3><p>Tabelas, colunas, tipos, FKs, constraints, índices e views.</p><div class="bar"><i></i></div><small>Reproduzibilidade estrutural</small></div>
+        <div class="card"><h3>Referência</h3><p>Doenças, códigos sentinela e seeds pequenos, determinísticos e idempotentes.</p><div class="bar"><i></i></div><small>Dados de catálogo</small></div>
+        <div class="card"><h3>Contrato</h3><p>Grão da fato, publicação corrente, permissões e consultas críticas.</p><div class="bar"><i></i></div><small>Integração entre repos</small></div>
+      </div>
+    </section>
+
+    <section id="riscos">
+      <h2>Riscos e controles</h2>
+      <details open><summary>Duplicação temporária de migrations</summary><p>Será controlada com uma janela de congelamento e uma única migration consolidada. O CI verificará que Java/Pipeline não contêm uma segunda fonte ativa.</p></details>
+      <details><summary>Diferença entre banco existente e migration inicial</summary><p>Antes do cutover será feito inventário e dump de estrutura. O baseline será comparado por catálogo PostgreSQL, não apenas por arquivos.</p></details>
+      <details><summary>Permissões insuficientes</summary><p>O job de migration usará usuário migrador; Java terá apenas leitura/escrita operacional autorizada e Pipeline terá os grants mínimos para analytics.</p></details>
+      <details><summary>Rollback</summary><p>Migrations destrutivas não terão downgrade automático. O rollback operacional será feito por imagem anterior e restauração de backup aprovado. Em pré-produção, será possível recriar o volume.</p></details>
+    </section>
+
+    <section id="aceite">
+      <h2>Critérios de aceite</h2>
+      <ul>
+        <li>Um PostgreSQL vazio sobe com o comando documentado e chega ao estado oficial sem intervenção manual.</li>
+        <li>Java, Pipeline e Deployment usam a mesma versão de schema registrada.</li>
+        <li>O CI aplica migrations em banco limpo e testa upgrade a partir de uma versão anterior.</li>
+        <li>As roles não conseguem executar DDL fora do usuário migrador.</li>
+        <li>Uma carga de DENG de referência reconcilia Bronze, Silver, Gold e PostgreSQL.</li>
+        <li>As consultas de região, UF, município, distrito e bairro continuam retornando os mesmos resultados funcionais.</li>
+        <li>O runbook informa etapa, duração, logs e causa de falha.</li>
+      </ul>
+    </section>
+
+    <section id="resultado">
+      <h2>Resultado esperado</h2>
+      <div class="card ok"><p>Ao final, o banco deixa de ser um efeito colateral de dois serviços e passa a ser um produto versionado, testável e reproduzível. O <code>NSS-database</code> será a fonte oficial do estado estrutural; o PostgreSQL continuará sendo a fonte dos dados carregados em execução.</p></div>
+    </section>
+    <footer>Documento de planejamento · NSS · atualizado em 06/11/2026</footer>
+  </main>
+</body>
+</html>
