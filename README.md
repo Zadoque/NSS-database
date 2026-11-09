@@ -2,12 +2,12 @@
 
 Documentação e contrato do banco de dados da plataforma NSS (Sala de Situação de Saúde).
 
-Este repositório centraliza a explicação dos bancos, schemas, tabelas, permissões, consultas analíticas, índices, migrations e medições de desempenho. As migrations continuam sendo executadas e mantidas no repositório responsável por cada ciclo de vida até que o banco seja desacoplado operacionalmente.
+Este repositório mantém a versão inicial 0001 dos schemas operacional e analítico, o provisionamento das roles e os testes do contrato do banco. O job central aplica cada componente ao banco configurado e registra o checksum em `nss_schema.version`. Schemas legados sem histórico central são rejeitados e exigem migração de dados própria.
 
 ## Repositórios relacionados
 
 - [NSS Deployment](https://github.com/Zadoque/NSS-deployment): composição dos serviços, banco, roles e execução.
-- [NSS Pipeline](https://github.com/Zadoque/NSS-pipeline): Bronze, Silver, Gold, carga analítica e migrations do schema `analytics`.
+- [NSS Pipeline](https://github.com/Zadoque/NSS-pipeline): Bronze, Silver, Gold e carga analítica.
 - [NSS Java](https://github.com/Zadoque/Site-Sala-de-Situa-o-de-Saude-Java): API, autenticação e consultas do banco.
 - [NSS Front-end](https://github.com/Zadoque/NSS-front-end): aplicação web consumidora da API.
 
