@@ -40,6 +40,39 @@ flowchart LR
 4. Toda mudança de schema deve ter migration, teste e medição de impacto.
 5. Resultados de `EXPLAIN (ANALYZE, BUFFERS)` devem ser registrados quando uma consulta crítica for alterada.
 
+## Modelo analítico estrela e consultas
+
+O schema `analytics` usa um modelo estrela: `fato_casos` é a tabela fato central,
+com a medida `cases_total`, e as dimensões fornecem os atributos usados nos
+filtros e agrupamentos da API. A tabela `pipeline_current_publication` funciona
+como controle de publicação e limita cada consulta ao lote corrente.
+
+```mermaid
+flowchart LR
+  F[(analytics.fato_casos)]
+  D1[dim_doenca] --> F
+  D2[dim_municipio] --> F
+  D3[dim_unidade_saude] --> F
+  D4[dim_classificacao] --> F
+  D5[dim_evolucao] --> F
+  P[pipeline_current_publication] -->|batch publicado| F
+  J[NSS Java] -->|filtros + agregações| F
+```
+
+O Java normalmente executa uma consulta de total e uma consulta agrupada por
+território (município, distrito ou bairro). As consultas filtram doença, ano,
+município, distrito, sexo, faixa etária e `batch_id` publicado; não leem lotes
+antigos nem fazem soma no frontend. Índices compostos e `INCLUDE` cobrem os
+predicados mais seletivos. O catálogo em
+[`docs/query-catalog.md`](docs/query-catalog.md) registra SQL, planos
+`EXPLAIN (ANALYZE, BUFFERS)`, comparativos antes/depois e condições do benchmark.
+
+No recorte de referência DENG/2024/Rio de Janeiro, o plano otimizado reduziu a
+consulta de totais de aproximadamente 65,6 ms para 29,6 ms e a agregação por
+bairros de aproximadamente 230 ms para 60 ms com `work_mem=64MB`. Esses valores
+são evidências do ambiente medido, não um SLO universal; qualquer alteração de
+consulta deve repetir a medição informando volume, hardware, filtros e cache.
+
 ## Arquitetura e estrutura
 
 ```mermaid
