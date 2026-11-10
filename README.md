@@ -39,3 +39,16 @@ flowchart LR
 3. Consultas da API devem respeitar a publicação corrente e nunca misturar lotes antigos.
 4. Toda mudança de schema deve ter migration, teste e medição de impacto.
 5. Resultados de `EXPLAIN (ANALYZE, BUFFERS)` devem ser registrados quando uma consulta crítica for alterada.
+
+## Arquitetura e estrutura
+
+```mermaid
+flowchart LR
+  D[Deployment] --> M[Database image 0001]
+  M --> P[(PostgreSQL)]
+  P --> J[Java runtime]
+  P --> PL[Pipeline analytics]
+  P --> A[Animal facts]
+```
+
+`migrations/` contém a única migration; `scripts/` provisiona papéis e verifica o schema; `tests/` cobre criação vazia, reexecução e permissões; `documentation/` registra contratos. Java e pipeline consomem o schema centralizado e não mantêm migrations concorrentes.
