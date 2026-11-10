@@ -1,0 +1,21 @@
+name: Database
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  schema-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verificar scripts
+        run: sh -n scripts/database.sh && sh -n tests/schema-smoke.sh
+      - name: Construir a imagem da versão 0001
+        run: docker build --tag nss-database:0001 .
+      - name: Validar contrato e permissões no PostgreSQL
+        run: tests/schema-smoke.sh

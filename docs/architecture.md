@@ -71,4 +71,4 @@ sequenceDiagram
 
 ## Migrations
 
-As migrations do schema `analytics` estão no repositório `NSS-pipeline` e são executadas pelo serviço `migrate` do deployment. Este repositório documenta o contrato e o impacto das migrations, evitando que a documentação fique espalhada entre código e infraestrutura.
+A configuração inicial `0001` deste repositório contém os componentes `app` e `analytics`, incluindo `analytics_animal.fato_esporo`. O job central provisiona roles, aplica cada componente ao banco configurado e registra a versão e o checksum em `nss_schema.version`. Bancos novos podem compartilhar a mesma base ou usar bases distintas. Bancos legados sem histórico central são recusados e precisam de um procedimento de transferência e validação antes da adoção.
