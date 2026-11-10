@@ -45,6 +45,9 @@ Recorte usado:
 DENG / 2024 / município 3304557 / distrito IBGE_DIST_330455705
 ```
 
+Hardware do ambiente de referência: Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz,
+com 4 threads disponíveis e 15 GiB de RAM.
+
 Resultados observados no ambiente local:
 
 | Consulta | Plano anterior | Plano otimizado |

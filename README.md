@@ -67,7 +67,9 @@ predicados mais seletivos. O catálogo em
 [`docs/query-catalog.md`](docs/query-catalog.md) registra SQL, planos
 `EXPLAIN (ANALYZE, BUFFERS)`, comparativos antes/depois e condições do benchmark.
 
-No recorte de referência DENG/2024/Rio de Janeiro, o plano otimizado reduziu a
+No recorte de referência DENG/2024/Rio de Janeiro, medido em um Intel(R)
+Core(TM) i7-2600 CPU @ 3.40GHz, com 4 threads disponíveis e 15 GiB de RAM, o
+plano otimizado reduziu a
 consulta de totais de aproximadamente 65,6 ms para 29,6 ms e a agregação por
 bairros de aproximadamente 230 ms para 60 ms com `work_mem=64MB`. Esses valores
 são evidências do ambiente medido, não um SLO universal; qualquer alteração de
