@@ -7,6 +7,10 @@ nenhum secret de produção pertence aqui. No servidor, os valores são composto
 pelo Deployment em `/etc/nss/deployment.env` (modo `0600`) e usados para criar
 as roles e aplicar a migration central.
 
+Para teste local do componente: `cp .env.local.test .env`. Em uma instalação
+integrada, prefira sempre o arquivo do Deployment para manter as credenciais
+coerentes entre banco, Java e pipeline.
+
 Documentação e contrato do banco de dados da plataforma NSS (Sala de Situação de Saúde).
 
 Este repositório mantém a versão inicial 0001 dos schemas operacional e analítico, o provisionamento das roles e os testes do contrato do banco. O job central aplica cada componente ao banco configurado e registra o checksum em `nss_schema.version`. Schemas legados sem histórico central são rejeitados e exigem migração de dados própria.
